@@ -43,8 +43,8 @@
         <div
           class="uploader-list-main"
           v-infinite-scroll="loadMoreTasks"
-          :infinite-scroll-distance="100"
-          :infinite-scroll-delay="100"
+          :infinite-scroll-distance="120"
+          :infinite-scroll-delay="10"
         >
           <div
             class="list-row"
@@ -138,7 +138,8 @@ import {
   UploadFile,
   ID,
   Obj,
-  Storage
+  Storage,
+  scheduleWork
 } from "js-uploader";
 // "../../../rx-uploader/publish/dist/esm";
 
@@ -188,7 +189,7 @@ export default defineComponent({
               resolve({
                 CMPID: "f05dd7da36ba4e238f9c1f053c2e76e3",
                 TOKEN:
-                  "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlY20gY2xpZW50IiwiaXNzIjoienZpbmciLCJjbGFpbURlZmF1bHRLZXkiOiJsaXVsZWkwMSIsImV4cCI6MTYwOTY2NzM0OCwiaWF0IjoxNjA5MDYyNTQ4LCJqdGkiOiI4MGQ1ZTVkMWQxODM0ZmQyYWVjOWI2NzAxZWUwYzVmYiJ9.y7tiMYmlJNpx3gtMsrD8qRxpZWpxhi7ZMBPyBeHr6Xk"
+                  "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlY20gY2xpZW50IiwiaXNzIjoienZpbmciLCJjbGFpbURlZmF1bHRLZXkiOiJsaXVsZWkwMSIsImV4cCI6MTYxMDI3NDgxOCwiaWF0IjoxNjA5NjcwMDE4LCJqdGkiOiI0NzE5ZWY4MmU0ZDI0ZWIzYTljOWIxZDg5YTNkZTNmMyJ9.wJ_E_DRjKnXUfBXrDFs2k52dskiQfJfrzvS-Ed2zmno"
               });
             }, 200);
           });
@@ -253,8 +254,10 @@ export default defineComponent({
     };
 
     const loadMoreTasks = () => {
-      let index = Math.max(state.lazyTaskList.length, 1);
-      state.lazyTaskList.push(...state.taskList.slice(index, index + 20));
+      scheduleWork(() => {
+        let index = Math.max(state.lazyTaskList.length, 1);
+        state.lazyTaskList.push(...state.taskList.slice(index, index + 20));
+      });
     };
 
     const eventHandler = (eventType: EventType, ...args: unknown[]) => {
