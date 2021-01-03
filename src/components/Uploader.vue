@@ -253,7 +253,7 @@ export default defineComponent({
     };
 
     const loadMoreTasks = () => {
-      let index = Math.max(state.lazyTaskList.length - 1, 0);
+      let index = Math.max(state.lazyTaskList.length, 1);
       state.lazyTaskList.push(...state.taskList.slice(index, index + 20));
     };
 
