@@ -40,9 +40,23 @@
             <i class="el-icon-folder-add"></i> Add more
           </a>
         </div>
-        <div class="uploader-list-main">
-          <div class="list-row" v-for="item in taskList" :key="item.id">
-            <el-row :gutter="10">
+        <div
+          class="uploader-list-main"
+          v-infinite-scroll="loadMoreTasks"
+          :infinite-scroll-distance="100"
+          :infinite-scroll-delay="100"
+        >
+          <div
+            class="list-row"
+            v-for="(item, index) in lazyTaskList"
+            :key="item.id"
+          >
+            <el-row :gutter="5">
+              <el-col :span="2">
+                <div class="list-row-index" :title="index + 1">
+                  {{ index + 1 }}.
+                </div>
+              </el-col>
               <el-col :span="10">
                 <div class="item-name">
                   <i class="el-icon-document" v-if="item.type === 'file'"></i>
@@ -53,13 +67,13 @@
               <el-col :span="3">
                 <span>{{ formatSize(item.fileSize || item.filSize) }}</span>
               </el-col>
-              <el-col :span="8">
+              <el-col :span="7">
                 <el-progress
                   :percentage="item.progress"
                   :status="item.status === 'error' ? 'exception' : ''"
                 ></el-progress>
               </el-col>
-              <el-col :span="3">
+              <el-col :span="2">
                 <div class="table-operate">
                   <i
                     v-if="item.status === 'pause'"
@@ -125,7 +139,8 @@ import {
   ID,
   Obj,
   Storage
-} from "../../../rx-uploader/src";
+} from "js-uploader";
+// "../../../rx-uploader/publish/dist/esm";
 
 import {
   defineComponent,
@@ -140,6 +155,7 @@ import { ElMessageBox } from "element-plus";
 
 interface State {
   taskList: UploadTask[];
+  lazyTaskList: UploadTask[];
   showDrop: boolean;
   showDropheader: boolean;
   isUploading: boolean;
@@ -155,6 +171,7 @@ export default defineComponent({
   setup(props, ctx: SetupContext) {
     const state = reactive<State>({
       taskList: reactive([]),
+      lazyTaskList: reactive([]),
       showDrop: true,
       showDropheader: false,
       isUploading: false
@@ -163,12 +180,8 @@ export default defineComponent({
 
     const options: UploaderOptions = {
       requestOptions: {
+        // url: "https://jsonplaceholder.typicode.com/posts/",
         url: "http://ecm.test.work.zving.com/catalogs/4751/files/upload",
-        // headers: {
-        //   CMPID: "f05dd7da36ba4e238f9c1f053c2e76e3",
-        //   TOKEN:
-        //     "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlY20gY2xpZW50IiwiaXNzIjoienZpbmciLCJjbGFpbURlZmF1bHRLZXkiOiJsaXVsZWkwMSIsImV4cCI6MTYwOTY2NzM0OCwiaWF0IjoxNjA5MDYyNTQ4LCJqdGkiOiI4MGQ1ZTVkMWQxODM0ZmQyYWVjOWI2NzAxZWUwYzVmYiJ9.y7tiMYmlJNpx3gtMsrD8qRxpZWpxhi7ZMBPyBeHr6Xk"
-        // },
         headers() {
           return new Promise(resolve => {
             setTimeout(() => {
@@ -196,10 +209,10 @@ export default defineComponent({
       },
       computeFileHash: true,
       computeChunkHash: true,
-      taskConcurrency: 5,
-      chunkConcurrency: 2,
+      taskConcurrency: 2,
+      chunkConcurrency: 5,
       resumable: false,
-      singleFileTask: false,
+      singleFileTask: true,
       maxRetryTimes: 3,
       retryInterval: 3000,
       skipTaskWhenUploadError: true
@@ -233,7 +246,15 @@ export default defineComponent({
     const addOrUpdateTask = (inputTask: UploadTask): UploadTask => {
       const task = findTask(inputTask.id);
       task ? Object.assign(task, inputTask) : state.taskList.push(inputTask);
+      if (!state.lazyTaskList.length) {
+        state.lazyTaskList.push(task || inputTask);
+      }
       return task || inputTask;
+    };
+
+    const loadMoreTasks = () => {
+      let index = Math.max(state.lazyTaskList.length - 1, 0);
+      state.lazyTaskList.push(...state.taskList.slice(index, index + 20));
     };
 
     const eventHandler = (eventType: EventType, ...args: unknown[]) => {
@@ -413,6 +434,7 @@ export default defineComponent({
       cancelTask,
       retryTask,
       formatSize,
+      loadMoreTasks,
       ...toRefs(state)
     };
   }
@@ -557,6 +579,16 @@ export default defineComponent({
   text-align: left;
   font-size: 16px;
   align-items: center;
+}
+
+.uploader-container
+  .uploader-list
+  .uploader-list-main
+  .list-row
+  .list-row-index {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 .uploader-container .uploader-list .uploader-list-main .list-row :hover {
   background-color: #f5f7fa;

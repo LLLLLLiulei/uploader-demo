@@ -10,7 +10,7 @@
   "dependencies": {
     "core-js": "^3.6.5",
     "element-plus": "^1.0.1-beta.18",
-    "js-uploader": "^0.0.1",
+    "js-uploader": "^0.0.3-beta",
     "vue": "^3.0.0"
   },
   "devDependencies": {
