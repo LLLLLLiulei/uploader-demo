@@ -281,8 +281,10 @@ export default defineComponent({
           break;
         case EventType.TaskCancel:
           task = args[0] as UploadTask;
-          index = findTaskIndex(task.id);
+          index = findTaskIndex(task?.id);
           index !== -1 && state.taskList.splice(index, 1);
+          index = state.lazyTaskList.findIndex(tsk => tsk.id === task?.id);
+          index !== -1 && state.lazyTaskList.splice(index, 1);
           break;
         case EventType.TaskProgress:
           mergeTaskAttr(args[0] as UploadTask);
