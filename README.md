@@ -1,5 +1,6 @@
 # uploader-demo
 
+![image](https://github.com/LLLLLLiulei/js-uploader/blob/main/assets/img/demo.gif?raw=true)
 ## Project setup
 ```
 yarn install
