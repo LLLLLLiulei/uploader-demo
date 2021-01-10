@@ -29,7 +29,10 @@
           <a href="javascript:void(0)" @click="confirmCancel()">
             <i class="el-icon-delete"></i> Clear
           </a>
-          <span> {{ taskList.length || "No" }} tasks </span>
+          <span v-if="!taskList.length"> No tasks </span>
+          <span v-else>
+            {{ finishedTaskNumber }} / {{ taskList.length }} tasks
+          </span>
           <a
             href="javascript:void(0)"
             @click="
@@ -40,83 +43,109 @@
             <i class="el-icon-folder-add"></i> Add more
           </a>
         </div>
-        <div
-          class="uploader-list-main"
-          v-infinite-scroll="loadMoreTasks"
-          :infinite-scroll-distance="120"
-          :infinite-scroll-delay="10"
-        >
+        <div class="uploader-list-main">
           <div
-            class="list-row"
-            v-for="(item, index) in lazyTaskList"
-            :key="item.id"
+            v-if="lazyTaskList.length"
+            v-infinite-scroll="loadMoreTasks"
+            :infinite-scroll-distance="120"
+            :infinite-scroll-delay="0"
           >
-            <el-row :gutter="5">
-              <el-col :span="2">
-                <div class="list-row-index" :title="index + 1">
-                  {{ index + 1 }}.
-                </div>
-              </el-col>
-              <el-col :span="10">
-                <div class="item-name">
-                  <i class="el-icon-document" v-if="item.type === 'file'"></i>
-                  <i class=" el-icon-folder" v-else></i>
-                  <span :title="item.name">{{ item.name }}</span>
-                </div>
-              </el-col>
-              <el-col :span="3">
-                <span>{{ formatSize(item.fileSize || item.filSize) }}</span>
-              </el-col>
-              <el-col :span="7">
-                <el-progress
-                  :percentage="item.progress"
-                  :status="item.status === 'error' ? 'exception' : ''"
-                ></el-progress>
-              </el-col>
-              <el-col :span="2">
-                <div class="table-operate">
-                  <i
-                    v-if="item.status === 'pause'"
-                    class="el-icon-video-play"
-                    @click="execTask(item)"
-                  ></i>
-                  <i
-                    v-if="
-                      item.status === 'uploading' || item.status === 'waiting'
-                    "
-                    class="el-icon-video-pause"
-                    @click="pauseTask(item)"
-                  ></i>
+            <div
+              class="list-row"
+              v-for="(item, index) in lazyTaskList"
+              :key="item.id"
+              :taskstatus="item.status"
+            >
+              <el-row>
+                <el-col :span="2">
+                  <div class="list-row-index" :title="index + 1">
+                    {{ index + 1 }}.
+                  </div>
+                </el-col>
+                <el-col :span="10">
+                  <div class="item-name">
+                    <i class="el-icon-document" v-if="item.type === 'file'"></i>
+                    <i class=" el-icon-folder" v-else></i>
+                    <el-tooltip
+                      class="item"
+                      effect="dark"
+                      :content="item.name"
+                      placement="bottom"
+                    >
+                      <span>{{ item.name }}</span>
+                    </el-tooltip>
+                  </div>
+                </el-col>
+                <el-col :span="4" class="text-align-start">
+                  <span>
+                    {{
+                      `${formatSize(item.uploaded)}/${formatSize(
+                        item.fileSize
+                      )}`
+                    }}
+                  </span>
+                </el-col>
+                <el-col :span="6" class="text-align-start">
+                  <el-progress
+                    :percentage="item.progress"
+                    :status="item.status === 'error' ? 'exception' : ''"
+                  ></el-progress>
+                  <div class="text-align-start">
+                    {{ item.status }}
+                  </div>
+                </el-col>
+                <el-col :span="2" class="text-align-center">
+                  <div class="table-operate">
+                    <i
+                      v-if="item.status === 'pause'"
+                      class="el-icon-video-play"
+                      @click="execTask(item)"
+                    ></i>
+                    <i
+                      v-if="
+                        item.status === 'uploading' || item.status === 'waiting'
+                      "
+                      class="el-icon-video-pause"
+                      @click="pauseTask(item)"
+                    ></i>
 
-                  <i
-                    v-if="item.status === 'complete'"
-                    class="el-icon-check"
-                  ></i>
-                  <i
-                    v-if="item.status === 'error'"
-                    class="el-icon-refresh-left"
-                    @click="retryTask(item)"
-                  ></i>
+                    <i
+                      v-if="item.status === 'complete'"
+                      class="el-icon-check"
+                    ></i>
+                    <i
+                      v-if="item.status === 'error'"
+                      class="el-icon-refresh-left"
+                      @click="retryTask(item)"
+                    ></i>
 
-                  <i
-                    class="el-icon-circle-close"
-                    @click="confirmCancel(item)"
-                  ></i>
+                    <i class="el-icon-delete" @click="confirmCancel(item)"></i>
 
-                  <i
-                    class="el-icon-loading"
-                    v-if="!item.extraInfo.presisted"
-                  ></i>
-                </div>
-              </el-col>
-            </el-row>
+                    <i
+                      class="el-icon-loading"
+                      v-if="!item.extraInfo.presisted"
+                    ></i>
+                  </div>
+                </el-col>
+              </el-row>
+            </div>
           </div>
         </div>
         <div class="uploader-list-footer">
-          <el-button v-if="!isUploading" type="primary" @click="execTask()">
+          <el-button
+            v-if="!isUploading"
+            :loading="uploadBtnLoading"
+            type="primary"
+            @click="execTask()"
+          >
             Upload
           </el-button>
-          <el-button v-else type="primary" @click="pauseTask()">
+          <el-button
+            v-else
+            type="primary"
+            :loading="pauseBtnLoading"
+            @click="pauseTask()"
+          >
             Pause
           </el-button>
           <el-button v-if="false" type="danger" @click="confirmCancel">
@@ -139,9 +168,11 @@ import {
   ID,
   Obj,
   Storage,
-  scheduleWork
-} from "js-uploader";
-// "../../../rx-uploader/publish/dist/esm";
+  FileStore,
+  scheduleWork,
+  StatusCode
+} from "../../../rx-uploader/src";
+// "js-uploader";
 
 import {
   defineComponent,
@@ -160,6 +191,9 @@ interface State {
   showDrop: boolean;
   showDropheader: boolean;
   isUploading: boolean;
+  uploadBtnLoading: boolean;
+  pauseBtnLoading: boolean;
+  finishedTaskNumber: number;
 }
 
 interface TaskExtraInfo extends Obj {
@@ -175,7 +209,10 @@ export default defineComponent({
       lazyTaskList: reactive([]),
       showDrop: true,
       showDropheader: false,
-      isUploading: false
+      isUploading: false,
+      uploadBtnLoading: false,
+      pauseBtnLoading: false,
+      finishedTaskNumber: 0
     });
     console.log("🚀 ~ file: Uploader.vue ~ line 136 ~ setup ~ state", state);
 
@@ -222,11 +259,20 @@ export default defineComponent({
     const uploader: Uploader = Uploader.create(options);
 
     // TODO
-    Object.assign(window, { uploader });
+    Object.assign(window, { uploader, FileStore });
 
     const checkUploading = (): boolean => {
       state.isUploading = uploader.isUploading();
+      state.pauseBtnLoading = false;
+      state.uploadBtnLoading = false;
       return state.isUploading;
+    };
+
+    const calcFinishedTaskNumber = (): number => {
+      state.finishedTaskNumber = state.taskList.filter(
+        i => i.status === StatusCode.Complete
+      ).length;
+      return state.finishedTaskNumber;
     };
 
     const findTask = (id: ID): Nullable<UploadTask> => {
@@ -256,8 +302,8 @@ export default defineComponent({
     const loadMoreTasks = () => {
       scheduleWork(() => {
         let index = Math.max(state.lazyTaskList.length, 1);
-        state.lazyTaskList.push(...state.taskList.slice(index, index + 20));
-      });
+        state.lazyTaskList.push(...state.taskList.slice(index, index + 50));
+      }, 500);
     };
 
     const eventHandler = (eventType: EventType, ...args: unknown[]) => {
@@ -286,6 +332,9 @@ export default defineComponent({
           index = state.lazyTaskList.findIndex(tsk => tsk.id === task?.id);
           index !== -1 && state.lazyTaskList.splice(index, 1);
           break;
+        case EventType.TaskUploadStart:
+          mergeTaskAttr(args[0] as UploadTask);
+          break;
         case EventType.TaskProgress:
           mergeTaskAttr(args[0] as UploadTask);
           break;
@@ -300,6 +349,7 @@ export default defineComponent({
           break;
         case EventType.TaskComplete:
           mergeTaskAttr(args[0] as UploadTask);
+          scheduleWork(() => calcFinishedTaskNumber(), 1000);
           break;
         case EventType.TaskError:
           mergeTaskAttr(args[0] as UploadTask);
@@ -361,9 +411,13 @@ export default defineComponent({
     };
 
     const confirmCancel = (task?: UploadTask) => {
-      ElMessageBox.confirm("Do you confirm to cancel all tasks ?", "Warning", {
-        type: "warning"
-      })
+      ElMessageBox.confirm(
+        `Do you confirm to cancel ${task?.name || "all tasks"} ?`,
+        "Warning",
+        {
+          type: "warning"
+        }
+      )
         .then(() => uploader.cancel(task))
         .catch(() => {
           console.log("cancel");
@@ -373,11 +427,13 @@ export default defineComponent({
     const getRawTask = (id?: ID) => uploader.taskQueue.find(i => i.id === id);
 
     const execTask = (task?: UploadTask) => {
+      // state.uploadBtnLoading = true;
       uploader.upload(getRawTask(task?.id));
       checkUploading();
     };
 
     const pauseTask = (task?: UploadTask) => {
+      // state.pauseBtnLoading = true;
       uploader.pause(getRawTask(task?.id));
       checkUploading();
     };
@@ -393,19 +449,34 @@ export default defineComponent({
     };
 
     const formatSize = (size: number): string => {
-      if (isNaN(size) || size === Infinity) {
-        return "";
-      }
+      size = isNaN(size) || size === Infinity ? 0 : size;
       if (size < 1024) {
         return size.toFixed(0) + " B";
       }
       if (size < 1024 ** 2) {
-        return (size / 1024.0).toFixed(0) + " KB";
+        return (size / 1024.0).toFixed(0) + " K";
       }
       if (size < 1024 ** 3) {
         return (size / 1024.0 / 1024.0).toFixed(1) + " M";
       }
       return (size / 1024.0 / 1024.0 / 1024.0).toFixed(1) + " G";
+    };
+
+    const getStatusText = (statusCode: StatusCode): string => {
+      switch (statusCode) {
+        case StatusCode.Pause:
+          return "已暂停";
+        case StatusCode.Waiting:
+          return "排队中";
+        case StatusCode.Uploading:
+          return "上传中";
+        case StatusCode.Error:
+          return "出错";
+        case StatusCode.Complete:
+          return "完成";
+        default:
+          return "";
+      }
     };
 
     const doSomeEffectBeforeCreated = () => {
@@ -440,7 +511,9 @@ export default defineComponent({
       retryTask,
       formatSize,
       loadMoreTasks,
-      ...toRefs(state)
+      getStatusText,
+      ...toRefs(state),
+      StatusCode
     };
   }
 });
@@ -461,7 +534,7 @@ export default defineComponent({
   font-size: 18px;
 }
 .uploader-container .uploader-drop-hover {
-  border: 2.5px dashed #409eff !important;
+  border: 3px dashed #409eff !important;
 }
 .uploader-container .uploader-drop .uploader-drop-header {
   display: flex;
@@ -565,7 +638,7 @@ export default defineComponent({
 
 .table-operate i {
   cursor: pointer;
-  font-size: 22px;
+  font-size: 18px;
   color: #2275d7;
 }
 .uploader-container .uploader-list .uploader-list-main .item-name {
@@ -578,13 +651,21 @@ export default defineComponent({
 .uploader-container .uploader-list .uploader-list-main .item-name i {
   display: inline;
   padding-right: 5px;
+  color: #909399;
 }
 .uploader-container .uploader-list .uploader-list-main .list-row {
   padding: 8px 10px;
   text-align: left;
-  font-size: 16px;
+  font-size: 14px;
   align-items: center;
+  color: #606266;
 }
+.uploader-list-main .list-row[taskstatus="error"],
+.uploader-list-main .list-row[taskstatus="error"]:hover {
+  background: #ffe0e0;
+}
+
+/* ffe0e0 */
 
 .uploader-container
   .uploader-list
@@ -604,5 +685,14 @@ export default defineComponent({
   position: absolute;
   width: 1px;
   height: 1px;
+}
+.text-align-center {
+  text-align: center;
+}
+.text-align-end {
+  text-align: end;
+}
+.text-align-start {
+  text-align: start;
 }
 </style>
