@@ -171,8 +171,7 @@ import {
   FileStore,
   scheduleWork,
   StatusCode
-} from "../../../rx-uploader/src";
-// "js-uploader";
+} from "js-uploader";
 
 import {
   defineComponent,
