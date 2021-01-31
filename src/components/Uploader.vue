@@ -170,11 +170,12 @@ import {
   Storage,
   FileStore,
   scheduleWork,
-  StatusCode
+  StatusCode,
+  OSSType
 } from "js-uploader";
-
 import {
   defineComponent,
+  getCurrentInstance,
   onMounted,
   onUnmounted,
   reactive,
@@ -183,6 +184,10 @@ import {
   watchEffect
 } from "vue";
 import { ElMessageBox } from "element-plus";
+
+import mix from "./mix";
+import { ajax } from "rxjs/ajax";
+import { Observable } from "rxjs";
 
 interface State {
   taskList: UploadTask[];
@@ -202,7 +207,9 @@ interface TaskExtraInfo extends Obj {
 export default defineComponent({
   name: "Uploader",
   emits: [...Object.values(EventType)],
+  mixins: [mix],
   setup(props, ctx: SetupContext) {
+    console.log("Uploader.............................", getCurrentInstance());
     const state = reactive<State>({
       taskList: reactive([]),
       lazyTaskList: reactive([]),
@@ -215,6 +222,33 @@ export default defineComponent({
     });
     console.log("🚀 ~ file: Uploader.vue ~ line 136 ~ setup ~ state", state);
 
+    const authHeaders = {
+      CMPID: "f05dd7da36ba4e238f9c1f053c2e76e3",
+      GUID: "787845727d8345289a9bdc97de6e8556",
+      TOKEN:
+        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlY20gY2xpZW50IiwiaXNzIjoienZpbmciLCJjbGFpbURlZmF1bHRLZXkiOiJhZG1pbiIsImV4cCI6MTYxMjY4NjE2MCwiaWF0IjoxNjEyMDgxMzYwLCJqdGkiOiIxYzlmNTNiNzZjYWE0Y2I4OWRjMGEzY2RlOGQyMjBkOSJ9.LhIX33fE9DSeSmB6xF4WqjKSVK_yIjBU29C7c-Iw0sI"
+    };
+
+    const ossOptions = {
+      enable: true,
+      type: OSSType.Qiniu,
+      keyGenerator: (file: UploadFile) => {
+        return file.extraInfo.oss.key;
+      },
+      uptokenGenerator: async (file: UploadFile) => {
+        let url =
+          "http://saas.test.work.zving.com/server/companys/f05dd7da36ba4e238f9c1f053c2e76e3/oss/client/uptoken";
+        url = `${url}?fileName=${file.name}&fileSize=${file.size}&relativePath=${file.relativePath}`;
+        let ob$: Observable<{ key: string; token: string }> = ajax.getJSON(
+          url,
+          authHeaders
+        );
+        const res = await ob$.toPromise();
+        console.log("uptokenGenerator -> res", res);
+        file.extraInfo.oss = res;
+        return res.token;
+      }
+    };
     const options: UploaderOptions = {
       requestOptions: {
         // url: "https://jsonplaceholder.typicode.com/posts/",
@@ -222,11 +256,7 @@ export default defineComponent({
         headers() {
           return new Promise(resolve => {
             setTimeout(() => {
-              resolve({
-                CMPID: "f05dd7da36ba4e238f9c1f053c2e76e3",
-                TOKEN:
-                  "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlY20gY2xpZW50IiwiaXNzIjoienZpbmciLCJjbGFpbURlZmF1bHRLZXkiOiJsaXVsZWkwMSIsImV4cCI6MTYxMDI3NDgxOCwiaWF0IjoxNjA5NjcwMDE4LCJqdGkiOiI0NzE5ZWY4MmU0ZDI0ZWIzYTljOWIxZDg5YTNkZTNmMyJ9.wJ_E_DRjKnXUfBXrDFs2k52dskiQfJfrzvS-Ed2zmno"
-              });
+              resolve(authHeaders);
             }, 200);
           });
         },
@@ -244,6 +274,8 @@ export default defineComponent({
           });
         }
       },
+      ossOptions,
+      fileFilter: (fileName: string) => !/^.DS_Store$/.test(fileName),
       computeFileHash: true,
       computeChunkHash: true,
       taskConcurrency: 2,
@@ -252,7 +284,34 @@ export default defineComponent({
       singleFileTask: true,
       maxRetryTimes: 3,
       retryInterval: 3000,
-      skipTaskWhenUploadError: true
+      skipTaskWhenUploadError: true,
+      beforeFileUploadComplete: (task: UploadTask, file: UploadFile) => {
+        if (ossOptions.enable) {
+          let url =
+            "http://saas.test.work.zving.com/server/companys/f05dd7da36ba4e238f9c1f053c2e76e3/directorys/1658/files/upload";
+          let params = {
+            filename: file.name,
+            identifier: file.id,
+            relativePath: file.relativePath,
+            totalSize: file.size,
+            dao: file.response,
+            stats: {
+              atimeMs: file.lastModified,
+              mtimeMs: file.lastModified,
+              size: file.size
+            }
+          };
+          return ajax({
+            url,
+            method: "POST",
+            headers: {
+              ...authHeaders,
+              "Content-Type": "application/json;charset=UTF-8"
+            },
+            body: params
+          }).toPromise();
+        }
+      }
     };
 
     const uploader: Uploader = Uploader.create(options);
