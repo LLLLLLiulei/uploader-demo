@@ -171,7 +171,8 @@ import {
   FileStore,
   scheduleWork,
   StatusCode,
-  OSSType
+  OSSProvider,
+  OssOptions
 } from "js-uploader";
 import {
   defineComponent,
@@ -185,7 +186,8 @@ import {
 } from "vue";
 import { ElMessageBox } from "element-plus";
 
-import mix from "./mix";
+// import "../shared/test";
+
 import { ajax } from "rxjs/ajax";
 import { Observable } from "rxjs";
 
@@ -200,14 +202,78 @@ interface State {
   finishedTaskNumber: number;
 }
 
-interface TaskExtraInfo extends Obj {
-  presisted: boolean;
-}
+const awsConfig = {
+  region: "ap-southeast-1",
+  credentials: {
+    accessKeyId: "",
+    secretAccessKey: ""
+  },
+  endpoint: {
+    protocol: location.protocol,
+    hostname: `lllllliu.s3.ap-southeast-1.amazonaws.com`
+  }
+};
+const qiniuConfig = {
+  region: "cn-south-1",
+  credentials: {
+    accessKeyId: "",
+    secretAccessKey: ""
+  },
+  endpoint: {
+    protocol: location.protocol,
+    hostname: `slimdoc-test.s3-cn-south-1.qiniucs.com`
+  }
+};
+const aliyunConfig = {
+  region: "oss-cn-shenzhen",
+  credentials: {
+    accessKeyId: "",
+    secretAccessKey: ""
+  },
+  endpoint: {
+    protocol: location.protocol,
+    hostname: `demo1065.oss-cn-shenzhen.aliyuncs.com`
+  }
+};
+const tencentConfig = {
+  region: "ap-shanghai",
+  credentials: {
+    accessKeyId: "",
+    secretAccessKey: ""
+  },
+  endpoint: {
+    protocol: location.protocol,
+    hostname: `lg-ozslswg4-1251443542.cos.ap-shanghai.myqcloud.com`
+  }
+};
+const baiduConfig = {
+  region: "s3.gz.bcebos.com",
+  credentials: {
+    accessKeyId: "",
+    secretAccessKey: ""
+  },
+  endpoint: {
+    protocol: location.protocol,
+    hostname: `s3-testing.cdn.bcebos.com`
+  }
+};
+const baiduConfig1 = {
+  region: "s3.gz.bcebos.com",
+  credentials: {
+    accessKeyId: "",
+    secretAccessKey: ""
+  },
+  endpoint: {
+    protocol: location.protocol,
+    hostname: `lllllliu.s3.gz.bcebos.com`
+  }
+};
+
+const testS3Config = baiduConfig;
 
 export default defineComponent({
   name: "Uploader",
   emits: [...Object.values(EventType)],
-  mixins: [mix],
   setup(props, ctx: SetupContext) {
     console.log("Uploader.............................", getCurrentInstance());
     const state = reactive<State>({
@@ -229,11 +295,14 @@ export default defineComponent({
         "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlY20gY2xpZW50IiwiaXNzIjoienZpbmciLCJjbGFpbURlZmF1bHRLZXkiOiJhZG1pbiIsImV4cCI6MTYxMjY4NjE2MCwiaWF0IjoxNjEyMDgxMzYwLCJqdGkiOiIxYzlmNTNiNzZjYWE0Y2I4OWRjMGEzY2RlOGQyMjBkOSJ9.LhIX33fE9DSeSmB6xF4WqjKSVK_yIjBU29C7c-Iw0sI"
     };
 
-    const ossOptions = {
+    const ossOptions: OssOptions = {
       enable: true,
-      type: OSSType.Qiniu,
+      provider: OSSProvider.S3,
+      s3Config: () => {
+        return Promise.resolve(testS3Config);
+      },
       keyGenerator: (file: UploadFile) => {
-        return file.extraInfo.oss.key;
+        return file.name;
       },
       uptokenGenerator: async (file: UploadFile) => {
         let url =
@@ -286,6 +355,9 @@ export default defineComponent({
       retryInterval: 3000,
       skipTaskWhenUploadError: true,
       beforeFileUploadComplete: (task: UploadTask, file: UploadFile) => {
+        if (task) {
+          return;
+        }
         if (ossOptions.enable) {
           let url =
             "http://saas.test.work.zving.com/server/companys/f05dd7da36ba4e238f9c1f053c2e76e3/directorys/1658/files/upload";
