@@ -1,23 +1,49 @@
 module.exports = {
-  root: true,
-  env: {
-    node: true
-  },
-  extends: [
-    "plugin:vue/vue3-essential",
-    "eslint:recommended",
-    "@vue/typescript/recommended",
-    "@vue/prettier",
-    "@vue/prettier/@typescript-eslint"
-  ],
+  parser: 'vue-eslint-parser',
   parserOptions: {
-    ecmaVersion: 2020
+    parser: '@typescript-eslint/parser',
+    ecmaVersion: 2020,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
   },
+
+  env: {
+    browser: true,
+    node: true,
+  },
+  extends: ['plugin:vue/vue3-essential', 'plugin:@typescript-eslint/recommended', 'prettier/@typescript-eslint'],
+  plugins: ['@typescript-eslint'],
   rules: {
-    "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
-    "no-debugger": process.env.NODE_ENV === "production" ? "warn" : "off",
-    "prefer-const":'off',
-    "@typescript-eslint/no-explicit-any":'off',
-    "@typescript-eslint/no-use-before-define":'off'
+    indent: 'off',
+    semi: ['error', 'never'],
+    quotes: ['warn', 'single'],
+    'no-unsafe-finally': 'warn',
+    'vue/no-unused-vars': 'warn',
+    'prefer-const': 'off',
+    'prefer-promise-reject-errors': 'warn',
+    'no-path-concat': 'warn',
+    'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
+    '@typescript-eslint/ban-ts-ignore': 'off',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-var-requires': 'off',
+    '@typescript-eslint/no-unused-vars': 'warn',
+    '@typescript-eslint/no-empty-function': 'off',
+    'vue/custom-event-name-casing': 'off',
+    'no-use-before-define': 'off',
+    '@typescript-eslint/no-use-before-define': 'off',
+    '@typescript-eslint/ban-ts-comment': 'off',
+    '@typescript-eslint/ban-types': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    //  暂时关闭一下校验
+    '@typescript-eslint/no-unused-vars': 'off',
+    '@typescript-eslint/no-this-alias': 'off',
+    '@typescript-eslint/no-inferrable-types': 'off',
+    'no-unused-vars': 'off',
+    'prefer-spread': 'off',
+    'prefer-rest-params': 'off',
   },
-};
+}
